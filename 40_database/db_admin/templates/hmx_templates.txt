@@ -1,0 +1,6 @@
+hmx_templates.txt
+2026-11-13 17:08:08
+
+Database packages:
+- hmx___pks.sql
+- hmx___pkb.sql
