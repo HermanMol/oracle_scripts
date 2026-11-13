@@ -1,0 +1,5 @@
+~\10_wrk\20_client\sql\!about_20_client_sql.txt
+
+Client specific DB objects.
+Each client uses this.
+Server does not need any of these objects.

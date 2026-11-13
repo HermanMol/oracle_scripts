@@ -1,0 +1,5 @@
+~\10_wrk\20_client\cmd\!about_20_client_cmd.txt
+
+Client specific CMD objects.
+Each client uses this.
+Server does not need any of these objects.

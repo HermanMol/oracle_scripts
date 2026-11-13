@@ -1,0 +1,24 @@
+~\10_wrk\20_client\sqldeveloper\!about_20_client_sqldeveloper.txt
+
+Oracle Sql Developer objects
+Date: 2026-11-13 10:04:40 +01:00
+
+About
+-----
+
+Oracle SQL Developer 26.2.0.186
+ Version 26.2.0.186
+Build 186.2220
+
+IDE Version: 14.1.2.0.42.260217.1610
+Product ID: oracle.sqldeveloper
+Product Version: 26.2.0.186.2220
+
+Version
+-------
+
+Component	Version
+=========	=======
+Oracle IDE	26.2.0.186.2220
+Java(TM) Platform	17.0.19
+
