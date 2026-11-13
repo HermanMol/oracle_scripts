@@ -6,3 +6,17 @@
 *.tmp
 # default spoolfile extentions for Oracle SQL/Plus, SQLcl
 *.lst
+# DOS/Windows shortcuts
+*.lnk
+
+# when no data then ignore these folders
+#/10_doc/**
+#/20_client/**
+/30_server/**
+/40_database/**
+/50_testing/**
+/60_data/**
+/70_logs/**
+/80_tools/**
+/90_baselines/**
+/99_temp/**

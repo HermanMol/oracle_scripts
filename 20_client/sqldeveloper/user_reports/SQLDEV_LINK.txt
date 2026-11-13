@@ -1,2 +1,4 @@
 Imagine what you can accomplish if you combine the INVOKED_FROM output with the SQL Developer SQLDEV:LINK feature in your 
 logging: instantly jump from a log message to the source line where that log message was issued from ...
+
+See sql files you can find with the statement: findstr /P /R "[SDEV_|SQLDEV:]LINK" *

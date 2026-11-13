@@ -1,5 +1,0 @@
-hmx_templates.txt
-
-Database packages:
-- hmx___pks.sql
-- hmx___pkb.sql
