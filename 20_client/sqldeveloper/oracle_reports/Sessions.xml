@@ -1,0 +1,478 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<displays>
+<display id="a7db0062-0114-1000-821d-c0a8010a29c4" type="" style="Table" enable="true">
+	<name><![CDATA[Sessions]]></name>
+	<description><![CDATA[Sessions]]></description>
+	<tooltip><![CDATA[Sessions]]></tooltip>
+	<drillclass><![CDATA[]]></drillclass>
+	<CustomValues>
+	</CustomValues>
+	<query>
+		<sql><![CDATA[
+                                                  with vs as (select rownum rnum,
+                                                  							  inst_id,
+                                                                              sid,
+                                                                              serial#,
+                                                                              status,
+                                                                              username,
+                                                                              last_call_et,
+                                                                              command,
+                                                                              machine,
+                                                                              osuser,
+                                                                              module,
+                                                                              action,
+                                                                              resource_consumer_group,
+                                                                              client_info,
+                                                                              client_identifier,
+                                                                              type,
+                                                                              terminal,
+                                                                              sql_id,
+                                                                              sql_child_number
+                                                                         from gv$session) 
+                                                             select vs.inst_id, vs.sid ,serial# serial, vs.sql_id, vs.sql_child_number,
+                                                                    vs.username "Username", 
+                                                                    case when vs.status = 'ACTIVE' 
+                                                                              then last_call_et 
+                                                                         else null end "Seconds in Wait",
+                                                                    vs.machine "Machine",
+                                                                    vs.osuser "OS User", 
+                                                                    lower(vs.status) "Status",
+                                                                    vs.module "Module",
+                                                                    vs.action "Action",
+                                                                    vs.resource_consumer_group,
+                                                                    vs.client_info,
+                                                                    vs.client_identifier
+                                                               from vs 
+                                                              where vs.USERNAME is not null
+                                                                and nvl(vs.osuser,'x') <> 'SYSTEM'
+                                                                and vs.type <> 'BACKGROUND'
+                                                                order by 1,2,3
+                                               ]]></sql>
+	</query>
+	<query>
+		<sql><![CDATA[
+                                                  with vs as (select rownum rnum,
+                                                  							  inst_id,
+                                                                              sid,
+                                                                              serial#,
+                                                                              status,
+                                                                              username,
+                                                                              last_call_et,
+                                                                              command,
+                                                                              machine,
+                                                                              osuser,
+                                                                              module,
+                                                                              action,
+                                                                              resource_consumer_group,
+                                                                              client_info,
+                                                                              client_identifier,
+                                                                              type,
+                                                                              terminal,
+                                                                              sql_id,
+                                                                              sql_child_number
+                                                                         from gv$session) 
+                                                             select vs.inst_id, vs.sid ,serial# serial, vs.sql_id, vs.sql_child_number,
+                                                                    vs.username "Username",
+                                                                    case when vs.status = 'ACTIVE' 
+                                                                              then last_call_et 
+                                                                         else null end "Seconds in Wait",
+                                                                    (select command_name from v$sqlcommand where command_type = vs.command ) "Command",
+                                                                    vs.machine "Machine",
+                                                                    vs.osuser "OS User", 
+                                                                    lower(vs.status) "Status",
+                                                                    vs.module "Module",
+                                                                    vs.action "Action",
+                                                                    vs.resource_consumer_group,
+                                                                    vs.client_info,
+                                                                    vs.client_identifier
+                                                               from vs 
+                                                              where vs.USERNAME is not null
+                                                                and nvl(vs.osuser,'x') <> 'SYSTEM'
+                                                                and vs.type <> 'BACKGROUND'
+                                                                order by 1,2,3
+                                               ]]></sql>
+	</query>
+	<display id="a7db0062-0114-1000-821e-c0a8010a29c4" type="Child" style="Code" enable="true">
+		<name><![CDATA[Active SQL]]></name>
+		<description><![CDATA[The Current or last SQL for the selected session]]></description>
+		<tooltip><![CDATA[The Current or last SQL for the selected session]]></tooltip>
+		<drillclass><![CDATA[]]></drillclass>
+		<CustomValues>
+		</CustomValues>
+		<query>
+			<sql><![CDATA[select replace(q.SQL_FULLTEXT,chr(0)) sql_text
+                                        from gv$session s,gv$sql q
+                                        where s.sql_address = q.address
+                                         and s.sql_hash_value = q.hash_value
+                                         and s.sql_child_number = q.child_number                                         
+                                         and s.inst_id = q.inst_id
+                                         and s.sid = :SID 
+                                         and s.inst_id = :INST_ID]]></sql>
+			<binds>
+				<bind id="SID">
+					<type><![CDATA[null]]></type>
+					<prompt><![CDATA[SID]]></prompt>
+					<tooltip><![CDATA[SID]]></tooltip>
+					<value><![CDATA[NULL_VALUE]]></value>
+					<bracket><![CDATA[null]]></bracket>
+				</bind>
+			</binds>
+		</query>
+	</display>
+	<display id="" type="Child" style="Table" enable="true">
+		<name><![CDATA[Explain Plan]]></name>
+		<description><![CDATA[]]></description>
+		<tooltip><![CDATA[]]></tooltip>
+		<drillclass><![CDATA[]]></drillclass>
+		<CustomValues>
+		</CustomValues>
+		<query>
+			<sql><![CDATA[SELECT sp.inst_id, plan_hash_value,LPAD('  ',4*(DEPTH-1))||operation||' '||options
+   ||' '||object_name
+   ||' '||DECODE(id, 0, 'Cost = '||position) "Query Plan",lpad(
+                        CASE
+                                WHEN cardinality > 1000000
+                                THEN to_char(trunc(cardinality/1000000)) || 'M'
+                                WHEN cardinality > 1000
+                                THEN to_char(trunc(cardinality/1000)) || 'K'
+                                ELSE cardinality || ' '
+                        END
+                ,       6
+                ,       ' '
+                ) AS "Rows" 
+  --  nvl(entries,0) as "Rowsource Time"
+   FROM gv$sql_plan sp
+  WHERE sp.sql_id = :SQL_ID and sp.child_number = :SQL_CHILD_NUMBER
+  order by sp.plan_hash_value,sp.inst_id,sp.child_address,sp.id]]></sql>
+			<binds>
+				<bind id="SQL_ID">
+					<type><![CDATA[null]]></type>
+					<prompt><![CDATA[SQL_ID]]></prompt>
+					<tooltip><![CDATA[SQL_ID]]></tooltip>
+					<value><![CDATA[NULL_VALUE]]></value>
+					<bracket><![CDATA[null]]></bracket>
+				</bind>
+				<bind id="SQL_CHILD_NUMBER">
+					<type><![CDATA[null]]></type>
+					<prompt><![CDATA[SQL_CHILD_NUMBER]]></prompt>
+					<tooltip><![CDATA[SQL_CHILD_NUMBER]]></tooltip>
+					<value><![CDATA[NULL_VALUE]]></value>
+					<bracket><![CDATA[null]]></bracket>
+				</bind>
+			</binds>
+			<columns>
+				<column hidden="false" isEditable="false">
+					<colName><![CDATA[QUERY_PLAN]]></colName>
+				</column>
+			</columns>
+		</query>
+		<query>
+			<sql><![CDATA[SELECT  LPAD('  ',4*(DEPTH-1))||operation||' '||options
+   ||' '||object_name
+   ||' '||DECODE(id, 0, 'Cost = '||position) "Query Plan",lpad(
+                        CASE
+                                WHEN cardinality > 1000000
+                                THEN to_char(trunc(cardinality/1000000)) || 'M'
+                                WHEN cardinality > 1000
+                                THEN to_char(trunc(cardinality/1000)) || 'K'
+                                ELSE cardinality || ' '
+                        END
+                ,       6
+                ,       ' '
+                ) AS "Rows"
+    --,nvl(entries,0) as "Rowsource Time(s)"
+   FROM gv$sql_plan sp
+  WHERE sp.sql_id = :SQL_ID and sp.child_number = :SQL_CHILD_NUMBER and sp.inst_id = :INST_ID
+  ORDER by sp.plan_hash_value, sp.id]]></sql>
+			<binds>
+				<bind id="SQL_ID">
+					<type><![CDATA[null]]></type>
+					<prompt><![CDATA[SQL_ID]]></prompt>
+					<tooltip><![CDATA[SQL_ID]]></tooltip>
+					<value><![CDATA[NULL_VALUE]]></value>
+					<bracket><![CDATA[null]]></bracket>
+				</bind>
+				<bind id="INST_ID">
+					<type><![CDATA[null]]></type>
+					<prompt><![CDATA[INST_ID]]></prompt>
+					<tooltip><![CDATA[INST_ID]]></tooltip>
+					<value><![CDATA[NULL_VALUE]]></value>
+					<bracket><![CDATA[null]]></bracket>
+				</bind>
+				<bind id="SQL_CHILD_NUMBER">
+					<type><![CDATA[null]]></type>
+					<prompt><![CDATA[SQL_CHILD_NUMBER]]></prompt>
+					<tooltip><![CDATA[SQL_CHILD_NUMBER]]></tooltip>
+					<value><![CDATA[NULL_VALUE]]></value>
+					<bracket><![CDATA[null]]></bracket>
+				</bind>
+			</binds>
+		</query>
+	</display>
+	<display id="a7db0062-0114-1000-821f-c0a8010a29c4" type="Child" style="Table" enable="true">
+		<name><![CDATA[Waits]]></name>
+		<description><![CDATA[Session Waits]]></description>
+		<tooltip><![CDATA[Session Waits]]></tooltip>
+		<drillclass><![CDATA[]]></drillclass>
+		<CustomValues>
+		</CustomValues>
+		<query>
+			<sql><![CDATA[select event,p1,p2,
+                                   case when p3 = 0 then null else p3 end p3
+                              from gv$session_wait
+                             where sid = :SID and inst_id = :INST_ID]]></sql>
+			<binds>
+				<bind id="INST_ID">
+					<type><![CDATA[null]]></type>
+					<prompt><![CDATA[INST_ID]]></prompt>
+					<tooltip><![CDATA[INST_ID]]></tooltip>
+					<value><![CDATA[NULL_VALUE]]></value>
+					<bracket><![CDATA[null]]></bracket>
+				</bind>
+				<bind id="SID">
+					<type><![CDATA[null]]></type>
+					<prompt><![CDATA[SID]]></prompt>
+					<tooltip><![CDATA[SID]]></tooltip>
+					<value><![CDATA[NULL_VALUE]]></value>
+					<bracket><![CDATA[null]]></bracket>
+				</bind>
+			</binds>
+		</query>
+	</display>
+	<display id="a7db0062-0114-1000-8220-c0a8010a29c4" type="Child" style="Table" enable="true">
+		<name><![CDATA[Server]]></name>
+		<description><![CDATA[Server Details]]></description>
+		<tooltip><![CDATA[Server Details]]></tooltip>
+		<drillclass><![CDATA[]]></drillclass>
+		<CustomValues>
+		</CustomValues>
+		<query>
+			<sql><![CDATA[select s.SID,s.status,s.username,s.process,s.LOGON_TIME,
+                                   s.logon_time since,s.server,s.type,p.spid,p.TRACEID,
+                                   s.serial#
+                              from gv$session s, gv$process p
+                             where s.sid = :SID and s.serial# = :SERIAL and s.inst_id = :INST_ID
+                               and s.paddr = p.addr and s.inst_id = p.inst_id
+                            ]]></sql>
+			<binds>
+				<bind id="SID">
+					<type><![CDATA[null]]></type>
+					<prompt><![CDATA[SID]]></prompt>
+					<tooltip><![CDATA[SID]]></tooltip>
+					<value><![CDATA[NULL_VALUE]]></value>
+					<bracket><![CDATA[null]]></bracket>
+				</bind>
+				<bind id="SERIAL">
+					<type><![CDATA[null]]></type>
+					<prompt><![CDATA[SERIAL]]></prompt>
+					<tooltip><![CDATA[SERIAL]]></tooltip>
+					<value><![CDATA[NULL_VALUE]]></value>
+					<bracket><![CDATA[null]]></bracket>
+				</bind>
+				<bind id="INST_ID">
+					<type><![CDATA[null]]></type>
+					<prompt><![CDATA[INST_ID]]></prompt>
+					<tooltip><![CDATA[INST_ID]]></tooltip>
+					<value><![CDATA[NULL_VALUE]]></value>
+					<bracket><![CDATA[null]]></bracket>
+				</bind>
+			</binds>
+		</query>
+	</display>
+	<display id="a7db0062-0114-1000-8221-c0a8010a29c4" type="Child" style="Table" enable="true">
+		<name><![CDATA[Client]]></name>
+		<description><![CDATA[Client Info]]></description>
+		<tooltip><![CDATA[Client Info]]></tooltip>
+		<drillclass><![CDATA[]]></drillclass>
+		<CustomValues>
+		</CustomValues>
+		<query>
+			<sql><![CDATA[select osuser,machine,terminal,CLIENT_INFO,CLIENT_IDENTIFIER
+                              from gv$session
+                             where sid = :SID and serial# = :SERIAL and inst_id = :INST_ID]]></sql>
+			<binds>
+				<bind id="SID">
+					<type><![CDATA[null]]></type>
+					<prompt><![CDATA[SID]]></prompt>
+					<tooltip><![CDATA[SID]]></tooltip>
+					<value><![CDATA[NULL_VALUE]]></value>
+					<bracket><![CDATA[null]]></bracket>
+				</bind>
+				<bind id="SERIAL">
+					<type><![CDATA[null]]></type>
+					<prompt><![CDATA[SERIAL]]></prompt>
+					<tooltip><![CDATA[SERIAL]]></tooltip>
+					<value><![CDATA[NULL_VALUE]]></value>
+					<bracket><![CDATA[null]]></bracket>
+				</bind>
+				<bind id="INST_ID">
+					<type><![CDATA[null]]></type>
+					<prompt><![CDATA[INST_ID]]></prompt>
+					<tooltip><![CDATA[INST_ID]]></tooltip>
+					<value><![CDATA[NULL_VALUE]]></value>
+					<bracket><![CDATA[null]]></bracket>
+				</bind>
+			</binds>
+		</query>
+	</display>
+	<display id="a7db0062-0114-1000-8222-c0a8010a29c4" type="Child" style="Table" enable="true">
+		<name><![CDATA[Application]]></name>
+		<description><![CDATA[Application Info    ]]></description>
+		<tooltip><![CDATA[Application Info]]></tooltip>
+		<drillclass><![CDATA[]]></drillclass>
+		<CustomValues>
+		</CustomValues>
+		<query>
+			<sql><![CDATA[select  (select command_name from v$sqlcommand where command_type = command ) "Command"
+                            ,LAST_CALL_ET,program,module,action
+                             from gv$session where sid = :SID and inst_id = :INST_ID]]></sql>
+			<binds>
+				<bind id="INST_ID">
+					<type><![CDATA[null]]></type>
+					<prompt><![CDATA[INST_ID]]></prompt>
+					<tooltip><![CDATA[INST_ID]]></tooltip>
+					<value><![CDATA[NULL_VALUE]]></value>
+					<bracket><![CDATA[null]]></bracket>
+				</bind>
+				<bind id="SID">
+					<type><![CDATA[null]]></type>
+					<prompt><![CDATA[SID]]></prompt>
+					<tooltip><![CDATA[SID]]></tooltip>
+					<value><![CDATA[NULL_VALUE]]></value>
+					<bracket><![CDATA[null]]></bracket>
+				</bind>
+			</binds>
+		</query>
+	</display>
+	<display id="a7db0062-0114-1000-8223-c0a8010a29c4" type="Child" style="Table" enable="true">
+		<name><![CDATA[Contention]]></name>
+		<description><![CDATA[Contention ( Locks ) ]]></description>
+		<tooltip><![CDATA[Contention ( Locks ) ]]></tooltip>
+		<drillclass><![CDATA[]]></drillclass>
+		<CustomValues>
+		</CustomValues>
+		<query>
+			<sql><![CDATA[with locks as(
+                                select session_id,lock_type,
+                                       mode_held,mode_requested,lock_id1,lock_id2,blocking_others
+                                  from sys.dba_lock),
+                            waiters as (
+                                select w.session_id waiting_session,
+                                        h.session_id holding_session,
+                                        w.lock_type lock_type,
+                                        h.mode_held mode_held,
+                                        w.mode_requested mode_requested,
+                                        w.lock_id1,
+                                        w.lock_id2
+                                  from locks w, locks h
+                                 where h.blocking_others =  'Blocking'
+                                  and  h.mode_held      !=  'None'
+                                  and  h.mode_held      !=  'Null'
+                                  and  w.mode_requested !=  'None'
+                                  and  w.lock_type       =  h.lock_type
+                                  and  w.lock_id1        =  h.lock_id1
+                                  and  w.lock_id2        =  h.lock_id2
+                                  and  (w.session_id = :SID
+                                        or
+                                        h.session_id = :SID)),
+                            blockers as(
+                                select holding_session waiting_session, to_number(null) holding_session, 
+                                       'None' lock_type, null mode_held, null mode_requested, 
+                                       null lock_id1, null lock_id2
+                                  from waiters
+                                 minus
+                                select waiting_session waiting_session, to_number(null) holding_session, 
+                                       'None' lock_type, null mode_held, null mode_requested, 
+                                       null lock_id1, null lock_id2
+                                  from waiters),
+                            waiters_blockers as(
+                                select waiting_session,holding_session,lock_type,mode_held,mode_requested,lock_id1,lock_id2
+                                  from waiters
+                                 union all
+                                select waiting_session,holding_session,lock_type,mode_held,mode_requested,lock_id1,lock_id2
+                                  from blockers),
+                            lock_objects as(
+                                select session_id,cnt lock_obj_count,
+                                       case when cnt = 1 then object_name
+                                            else null end object_name,
+                                       object_id,owner,object_type
+                                  from(
+                                    select session_id,count(distinct object_name) cnt,max(object_name) object_name,
+                                           max(lo.object_id) object_id, max(ao.owner) owner,max(object_type) object_type
+                                      from gv$locked_object lo,all_objects ao,waiters_blockers wb
+                                     where lo.object_id = ao.object_id and lo.inst_id = :INST_ID
+                                       and (wb.waiting_session = lo.session_id
+                                            or
+                                            wb.holding_session = lo.session_id)
+                                     group by session_id)),
+                            wait_block_ses as(
+                            select waiting_session,holding_session,lock_type,mode_held,mode_requested,
+                                   s.username,s.osuser,s.CLIENT_INFO,s.CLIENT_IDENTIFIER,o.object_name,o.owner,o.object_id,module,o.object_type,o.lock_obj_count,
+                                    (select command_name from v$sqlcommand where command_type = s.command ) "Command"
+                              from waiters_blockers wb, gv$session s,
+                                   lock_objects o
+                             where s.sid = wb.waiting_session and s.inst_id = :INST_ID
+                               and o.session_id(+) = wb.waiting_session
+                              )
+                            select  case when holding_session is null then 'Lock'
+                                         else 'Lock Waiting'
+                                   end status,
+                                   waiting_session,
+                                   username,
+                                    object_name,      
+                                   object_id,owner,object_type
+                              from wait_block_ses 
+                             start with holding_session is null
+                             connect by prior waiting_session =  holding_session]]></sql>
+			<binds>
+				<bind id="INST_ID">
+					<type><![CDATA[null]]></type>
+					<prompt><![CDATA[INST_ID]]></prompt>
+					<tooltip><![CDATA[INST_ID]]></tooltip>
+					<value><![CDATA[NULL_VALUE]]></value>
+					<bracket><![CDATA[null]]></bracket>
+				</bind>
+				<bind id="SID">
+					<type><![CDATA[null]]></type>
+					<prompt><![CDATA[SID]]></prompt>
+					<tooltip><![CDATA[SID]]></tooltip>
+					<value><![CDATA[NULL_VALUE]]></value>
+					<bracket><![CDATA[null]]></bracket>
+				</bind>
+			</binds>
+		</query>
+	</display>
+	<display id="" type="Child" style="Table" enable="true">
+		<name><![CDATA[Long Operations]]></name>
+		<description><![CDATA[% done of long running transactions]]></description>
+		<tooltip><![CDATA[Long operations]]></tooltip>
+		<drillclass><![CDATA[]]></drillclass>
+		<CustomValues>
+		</CustomValues>
+		<query>
+			<sql><![CDATA[SELECT
+								       TRUNC(sl.elapsed_seconds/60) || ':' || MOD(sl.elapsed_seconds,60) elapsed,
+								       TRUNC(sl.time_remaining/60) || ':' || MOD(sl.time_remaining,60) remaining,
+								       ROUND(sl.sofar/sl.totalwork*100, 2) progress_pct, inst_id
+							FROM         gv$session_longops sl
+							WHERE  sl.sql_id =:SQL_ID and sl.inst_id = :INST_ID
+							AND sl.time_remaining > 0]]></sql>
+			<binds>
+				<bind id="INST_ID">
+					<type><![CDATA[null]]></type>
+					<prompt><![CDATA[INST_ID]]></prompt>
+					<tooltip><![CDATA[INST_ID]]></tooltip>
+					<value><![CDATA[NULL_VALUE]]></value>
+					<bracket><![CDATA[null]]></bracket>
+				</bind>
+				<bind id="SQL_ID">
+					<prompt><![CDATA[SQL_ID]]></prompt>
+					<tooltip><![CDATA[SQL_ID]]></tooltip>
+					<value><![CDATA[NULL_VALUE]]></value>
+					<bracket><![CDATA[null]]></bracket>
+				</bind>
+			</binds>
+		</query>
+	</display>
+<item  reload="true"  reloadparent="false" removeFromParent="false" toolbar="false" ><title>Enable Session Trace</title><prompt type="confirm" required="false" >	<label>Enable Session Trace?</label>	<default><![CDATA[]]></default>	<value><![CDATA[]]></value>   	</prompt><sql><![CDATA[begin dbms_monitor.session_trace_enable(#SID#, #SERIAL#, TRUE, TRUE); end;]]></sql><script language="js"><![CDATA[]]></script><help>Start tracing the selected session.</help></item><item  reload="true"  reloadparent="false" removeFromParent="false" toolbar="false" ><title>Disable Session Trace</title><prompt type="confirm" required="false" >	<label>Disable Session Trace?</label>	<default><![CDATA[]]></default>	<value><![CDATA[]]></value>   	</prompt><sql><![CDATA[begin dbms_monitor.session_trace_disable(#SID#, #SERIAL#); end;]]></sql><script language="js"><![CDATA[]]></script><help>Stop tracing the selected session.</help></item><item  reload="true"  reloadparent="false" removeFromParent="false" toolbar="false" ><title>Kill Session</title><prompt type="confirm" required="false" >	<label>Kill Session?</label>	<default><![CDATA[]]></default>	<value><![CDATA[]]></value>   	</prompt><sql><![CDATA[ALTER SYSTEM KILL SESSION '#SID#, #SERIAL#, @#INST_ID#' IMMEDIATE]]></sql><script language="js"><![CDATA[]]></script><help>Kill the selected session.</help></item></display>
+</displays>

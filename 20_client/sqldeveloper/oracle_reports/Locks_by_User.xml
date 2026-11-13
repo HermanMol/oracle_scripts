@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<displays>
+<display id="a7db00df-0114-1000-8257-c0a8010a29c4" type="" style="Table" enable="true">
+	<name><![CDATA[Locks by User]]></name>
+	<description><![CDATA[Locks by user (Except type MR)]]></description>
+	<tooltip><![CDATA[Locks by user]]></tooltip>
+	<drillclass><![CDATA[]]></drillclass>
+	<CustomValues>
+	</CustomValues>
+	<query requiredAccessObjects="GV$SESSION,GV$PROCESS,SYS.OBJ$,GV$RESOURCE,SYS.USER$,GV$LOCK,GV$_LOCK">
+		<sql><![CDATA[
+                                                SELECT p.username  username                                      ,
+                                                       p.pid pid                                            ,
+                                                       s.sid    sid                                        ,
+                                                       s.serial# serial ,
+                                                       p.spid           spid                                 ,
+                                                       s.username ora                                    ,
+                                                       DECODE(l2.type,
+                                                              'TX','TRANSACTION ROW-LEVEL'     ,
+                                                              'RT','REDO-LOG'                  ,
+                                                              'TS','TEMPORARY SEGMENT '        ,
+                                                              'TD','TABLE LOCK'                ,
+                                                              'TM','ROW LOCK'                  ,
+                                                                   l2.type                     )   vlock,
+                                                       DECODE(l2.type,
+                                                              'TX','DML LOCK'                  ,
+                                                              'RT','REDO LOG'                  ,
+                                                              'TS','TEMPORARY SEGMENT'         ,
+                                                              'TD',DECODE(l2.lmode+l2.request  ,
+                                                                          4,'PARSE '          ||
+                                                                            u.name            ||
+                                                                            '.'               ||
+                                                                            o.name             ,
+                                                                          6,'DDL'              ,
+                                                                            l2.lmode+l2.request),
+                                                              'TM','DML '                     ||
+                                                                   u.name                     ||
+                                                                   '.'                        ||
+                                                                   o.name                      ,
+                                                                   l2.type                     )   type  ,
+                                                       DECODE(l2.lmode+l2.request              ,
+                                                              2   ,'RS'                        ,
+                                                              3   ,'RX'                        ,
+                                                              4   ,'S'                         ,
+                                                              5   ,'SRX'                       ,
+                                                              6   ,'X'                         ,
+                                                                   l2.lmode+l2.request         )   lmode ,
+                                                       DECODE(l2.request                       ,
+                                                              0,NULL                           ,
+                                                                'WAIT'                         )   wait
+                                                FROM   gv$process                p ,
+                                                       gv$_lock                  l1,
+                                                       gv$lock                   l2,
+                                                       gv$resource               r ,
+                                                       sys.obj$                  o ,
+                                                       sys.user$                 u ,
+                                                       gv$session                s
+                                                WHERE  s.paddr    = p.addr
+                                                  AND  s.saddr     = l1.saddr
+                                                  AND  l1.raddr   = r.addr
+                                                  AND  l2.addr    = l1.laddr
+                                                  AND  l2.type    <> 'MR'
+                                                  AND  r.id1      = o.obj# (+)
+                                                  AND  o.owner#   = u.user# (+)
+                                                  --AND  u.name = 'GME'
+                                                  AND  (:USER_NAME is null or s.username LIKE upper(:USER_NAME))
+                                                ORDER BY p.username, p.pid, p.spid, ora, DECODE(l2.type,
+                                                              'TX','TRANSACTION ROW-LEVEL'     ,
+                                                              'RT','REDO-LOG'                  ,
+                                                              'TS','TEMPORARY SEGMENT '        ,
+                                                              'TD','TABLE LOCK'                ,
+                                                              'TM','ROW LOCK'                  ,
+                                                                   l2.type                     )
+                                               ]]></sql>
+	</query>
+</display>
+</displays>

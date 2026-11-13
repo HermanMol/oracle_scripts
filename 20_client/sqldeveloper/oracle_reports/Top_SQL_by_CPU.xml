@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<displays>
+<display id="9961e61e-011b-1000-8002-c0a80102ca13" type="" style="Table" enable="true">
+	<name><![CDATA[Top SQL by CPU]]></name>
+	<description><![CDATA[Top SQL by CPU]]></description>
+	<tooltip><![CDATA[Top SQL by CPU]]></tooltip>
+	<drillclass><![CDATA[]]></drillclass>
+	<CustomValues>
+		<TYPE><![CDATA[null]]></TYPE>
+	</CustomValues>
+	<query>
+		<sql><![CDATA[select substr(sql_text,1,500) "SQL",
+                                      (cpu_time/1000000) "CPU_Seconds",
+                                      disk_reads "Disk_Reads",
+                                      buffer_gets "Buffer_Gets",
+                                      executions "Executions",
+                                      case when rows_processed = 0 then null
+                                           else round((buffer_gets/nvl(replace(rows_processed,0,1),1))) 
+                                           end "Buffer_gets/rows_proc",
+                                      round((buffer_gets/nvl(replace(executions,0,1),1))) "Buffer_gets/executions",
+                                      (elapsed_time/1000000) "Elapsed_Seconds",
+                                      module "Module"
+                                 from gv$sql s
+                                order by cpu_time desc nulls last]]></sql>
+		<columns>
+			<column colFormat="{0,number,###,###,###.0000}" hidden="false" isEditable="false">
+				<colName><![CDATA[CPU_Seconds]]></colName>
+			</column>
+			<column colFormat="{0,number,###,###,###.##}" hidden="false" isEditable="false">
+				<colName><![CDATA[Disk_Reads]]></colName>
+			</column>
+			<column colFormat="{0,number,###,###,###.##}" hidden="false" isEditable="false">
+				<colName><![CDATA[Buffer_Gets]]></colName>
+			</column>
+			<column colFormat="{0,number,###,###,###.##}" hidden="false" isEditable="false">
+				<colName><![CDATA[Executions]]></colName>
+			</column>
+			<column colFormat="{0,number,###,###,##0.000}" hidden="false" isEditable="false">
+				<colName><![CDATA[Buffer_gets/rows_proc]]></colName>
+			</column>
+			<column colFormat="{0,number,###,###,##0.000}" hidden="false" isEditable="false">
+				<colName><![CDATA[Buffer_gets/executions]]></colName>
+			</column>
+			<column colFormat="{0,number,###,###,###.0000}" hidden="false" isEditable="false">
+				<colName><![CDATA[Elapsed_Seconds]]></colName>
+			</column>
+		</columns>
+	</query>
+</display>
+</displays>

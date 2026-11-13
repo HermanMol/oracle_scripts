@@ -1,0 +1,124 @@
+-- #desc: Show all SQL from gv$sql (need privilege to SELECT on gv$sql)
+-- #from: SQL Developer report Database Administration->Top SQL by CPU
+-- #date: 2026-11-13
+-- Interesting columns:
+-- - last_active_time: Example 13-11-2026 11:13:54 (DB-timezone)
+-- - first_load_time: Example 2026-11-11/15:13:02
+-- - last_load_time: Example 2026-11-13/11:13:52
+-- - sql_text: First 500 characters of sql_fulltext
+-- - sql_fulltext: Is a CLOB
+-- - parsing_schema_id: Is what we want to select?
+-- - module = 'SQL Developer'
+select INST_ID
+    ,LAST_ACTIVE_TIME
+    ,SQL_TEXT
+    ,SQL_FULLTEXT
+    ,SQL_ID
+    ,SHARABLE_MEM
+    ,PERSISTENT_MEM
+    ,RUNTIME_MEM
+    ,SORTS
+    ,LOADED_VERSIONS
+    ,OPEN_VERSIONS
+    ,USERS_OPENING
+    ,FETCHES
+    ,EXECUTIONS
+    ,PX_SERVERS_EXECUTIONS
+    ,END_OF_FETCH_COUNT
+    ,USERS_EXECUTING
+    ,LOADS
+    ,FIRST_LOAD_TIME
+    ,INVALIDATIONS
+    ,PARSE_CALLS
+    ,DISK_READS
+    ,DIRECT_WRITES
+    ,DIRECT_READS
+    ,BUFFER_GETS
+    ,APPLICATION_WAIT_TIME
+    ,CONCURRENCY_WAIT_TIME
+    ,CLUSTER_WAIT_TIME
+    ,USER_IO_WAIT_TIME
+    ,PLSQL_EXEC_TIME
+    ,JAVA_EXEC_TIME
+    ,ROWS_PROCESSED
+    ,COMMAND_TYPE
+    ,OPTIMIZER_MODE
+    ,OPTIMIZER_COST
+    ,OPTIMIZER_ENV
+    ,OPTIMIZER_ENV_HASH_VALUE
+    ,PARSING_USER_ID
+    ,PARSING_SCHEMA_ID
+    ,PARSING_SCHEMA_NAME
+    ,KEPT_VERSIONS
+    ,ADDRESS
+    ,TYPE_CHK_HEAP
+    ,HASH_VALUE
+    ,OLD_HASH_VALUE
+    ,PLAN_HASH_VALUE
+    ,FULL_PLAN_HASH_VALUE
+    ,CHILD_NUMBER
+    ,SERVICE
+    ,SERVICE_HASH
+    ,MODULE
+    ,MODULE_HASH
+    ,ACTION
+    ,ACTION_HASH
+    ,SERIALIZABLE_ABORTS
+    ,OUTLINE_CATEGORY
+    ,CPU_TIME
+    ,ELAPSED_TIME
+    ,OUTLINE_SID
+    ,CHILD_ADDRESS
+    ,SQLTYPE
+    ,REMOTE
+    ,OBJECT_STATUS
+    ,LITERAL_HASH_VALUE
+    ,LAST_LOAD_TIME
+    ,IS_OBSOLETE
+    ,IS_BIND_SENSITIVE
+    ,IS_BIND_AWARE
+    ,IS_SHAREABLE
+    ,CHILD_LATCH
+    ,SQL_PROFILE
+    ,SQL_PATCH
+    ,SQL_PLAN_BASELINE
+    ,PROGRAM_ID
+    ,PROGRAM_LINE#
+    ,EXACT_MATCHING_SIGNATURE
+    ,FORCE_MATCHING_SIGNATURE
+    ,BIND_DATA
+    ,TYPECHECK_MEM
+    ,IO_CELL_OFFLOAD_ELIGIBLE_BYTES
+    ,IO_INTERCONNECT_BYTES
+    ,PHYSICAL_READ_REQUESTS
+    ,PHYSICAL_READ_BYTES
+    ,PHYSICAL_WRITE_REQUESTS
+    ,PHYSICAL_WRITE_BYTES
+    ,OPTIMIZED_PHY_READ_REQUESTS
+    ,LOCKED_TOTAL
+    ,PINNED_TOTAL
+    ,IO_CELL_UNCOMPRESSED_BYTES
+    ,IO_CELL_OFFLOAD_RETURNED_BYTES
+    ,CON_ID
+    ,IS_REOPTIMIZABLE
+    ,IS_RESOLVED_ADAPTIVE_PLAN
+    ,IM_SCANS
+    ,IM_SCAN_BYTES_UNCOMPRESSED
+    ,IM_SCAN_BYTES_INMEMORY
+    ,DDL_NO_INVALIDATE
+    ,IS_ROLLING_INVALID
+    ,IS_ROLLING_REFRESH_INVALID
+    ,RESULT_CACHE
+    ,SQL_QUARANTINE
+    ,AVOIDED_EXECUTIONS
+    ,HEAP0_LOAD_TIME
+    ,HEAP6_LOAD_TIME
+    ,RESULT_CACHE_EXECUTIONS 
+from gv$sql 
+join (  select user_id as selected_user_id
+        from all_users
+        where username = 'HMOL'
+     ) on selected_user_id = gv$sql.parsing_schema_id
+order by gv$sql.last_active_time desc
+fetch first 100 rows only
+/
